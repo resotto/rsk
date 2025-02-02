@@ -1,0 +1,39 @@
+name: scylladb-cluster
+
+services:
+  scylladb-1:
+    image: scylladb/scylla
+    container_name: scylladb-1
+    volumes:
+      - scylladb_volume1:/var/lib/scylla
+    command: --reactor-backend=epoll --cpuset=0,1,2,3
+    ports:
+      - "9042:9042"
+    mem_reservation: 8g
+    networks:
+      scylladb_network:
+        ipv4_address: 192.168.1.201
+
+  scylladb-2:
+    image: scylladb/scylla
+    container_name: scylladb-2
+    volumes:
+      - scylladb_volume2:/var/lib/scylla
+    command: --reactor-backend=epoll --cpuset=4,5,6,7 --seeds=192.168.1.201
+    ports:
+      - "9043:9042"
+    mem_reservation: 8g
+    networks:
+      scylladb_network:
+        ipv4_address: 192.168.1.202
+
+networks:
+  scylladb_network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 192.168.1.0/24
+
+volumes:
+  scylladb_volume1:
+  scylladb_volume2:

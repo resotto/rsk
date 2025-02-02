@@ -1,0 +1,111 @@
+name: kafka-cluster
+
+services:
+
+  kafka-broker-1:
+    image: apache/kafka-native
+    container_name: kafka-broker-1
+    hostname: kafka-broker-1
+    environment:
+      KAFKA_LOG4J_LOGGERS: "kafka=DEBUG"
+      KAFKA_CLUSTER_ID: "kafka-cluster"
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_INTER_BROKER_LISTENER_NAME: DOCKER
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,DOCKER:PLAINTEXT,HOST:PLAINTEXT
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 3@kafka-controller-1:9093,4@kafka-controller-2:9093
+      KAFKA_LISTENERS: HOST://:9000,DOCKER://:9092
+      KAFKA_ADVERTISED_LISTENERS: HOST://${LOCAL_IP_ADDRESS}:9000,DOCKER://${LOCAL_IP_ADDRESS}:9000
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 2
+      KAFKA_NUM_PARTITIONS: 2
+    ports:
+      - "9000:9092"
+    depends_on:
+      kafka-controller-1:
+        condition: service_healthy
+      kafka-controller-2:
+        condition: service_healthy
+
+  kafka-broker-2:
+    image: apache/kafka-native
+    container_name: kafka-broker-2
+    hostname: kafka-broker-2
+    environment:
+      KAFKA_LOG4J_LOGGERS: "kafka=DEBUG"
+      KAFKA_CLUSTER_ID: "kafka-cluster"
+      KAFKA_NODE_ID: 2
+      KAFKA_PROCESS_ROLES: broker
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_INTER_BROKER_LISTENER_NAME: DOCKER
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,DOCKER:PLAINTEXT,HOST:PLAINTEXT
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 3@kafka-controller-1:9093,4@kafka-controller-2:9093
+      KAFKA_LISTENERS: HOST://:9001,DOCKER://:9092
+      KAFKA_ADVERTISED_LISTENERS: HOST://${LOCAL_IP_ADDRESS}:9001,DOCKER://${LOCAL_IP_ADDRESS}:9001
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 2
+      KAFKA_NUM_PARTITIONS: 2
+    ports:
+      - "9001:9092"
+    depends_on:
+      kafka-controller-1:
+        condition: service_healthy
+      kafka-controller-2:
+        condition: service_healthy
+
+  kafka-controller-1:
+    image: apache/kafka-native
+    container_name: kafka-controller-1
+    hostname: kafka-controller-1
+    environment:
+      KAFKA_LOG4J_LOGGERS: "kafka=DEBUG"
+      KAFKA_CLUSTER_ID: "kafka-cluster"
+      KAFKA_NODE_ID: 3
+      KAFKA_PROCESS_ROLES: controller
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 3@kafka-controller-1:9093,4@kafka-controller-2:9093
+      KAFKA_LISTENERS: CONTROLLER://kafka-controller-1:9093
+    ports:
+      - "9003:9092"
+    healthcheck:
+      test: ["CMD", "bash", "-c", "echo > /dev/tcp/kafka-controller-1/9093"]
+      interval: 1s
+      retries: 20
+      start_period: 20s
+
+  kafka-controller-2:
+    image: apache/kafka-native
+    container_name: kafka-controller-2
+    hostname: kafka-controller-2
+    environment:
+      KAFKA_LOG4J_LOGGERS: "kafka=DEBUG"
+      KAFKA_CLUSTER_ID: "kafka-cluster"
+      KAFKA_NODE_ID: 4
+      KAFKA_PROCESS_ROLES: controller
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 3@kafka-controller-1:9093,4@kafka-controller-2:9093
+      KAFKA_LISTENERS: CONTROLLER://kafka-controller-2:9093
+    ports:
+      - "9004:9092"
+    healthcheck:
+      test: ["CMD", "bash", "-c", "echo > /dev/tcp/kafka-controller-1/9093"]
+      interval: 1s
+      retries: 20
+      start_period: 20s
+
+  kafka-ui:
+    image: ghcr.io/kafbat/kafka-ui:latest
+    ports:
+      - 8080:8080
+    environment:
+      DYNAMIC_CONFIG_ENABLED: "true"
+      KAFKA_CLUSTERS_0_NAME: kafka-cluster
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka-broker-1:9092,kafka-broker-2:9092
+    depends_on:
+      - kafka-controller-1
+      - kafka-controller-2
+      - kafka-broker-1
+      - kafka-broker-2
