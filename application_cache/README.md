@@ -201,7 +201,7 @@ $ docker compose -f docker-compose.scylladb.yml down -v
 Following table shows sample results for each combination (algorithm x length). Length 6~ looks better.
 | algorithm | requests | semaphore | hash function | (R) length | (Bloom) bits | (Bloom) position | execution time (ms) | memory usage (MB) | TRUE Positive | TRUE negative | false Positive | false negative | other (error) | RPS |
 |--|--|--|--|--|--|--|--|--|--|--|--|--|--|--|
-| R Filter | 10_000_000 | 1000 | xxhash | 7 | - | - | 282072 | 55102 | 55102 (1.10%) | 4944895 (98.90%) | 3 (6.00%) | 0 (0%) | 0 (0%) | 17725 |
+| R Filter | 10_000_000 | 1000 | xxhash | 7 | - | - | 282072 | 55102 | 55102 (1.10%) | 4944895 (98.90%) | 3 (0.00006%) | 0 (0%) | 0 (0%) | 17725 |
 | Bloom Filter | 10_000_000 | 1000 | xxhash | - | 100_000_000 | 10 | 310449 | 95 | 52766 (1.06%) | 4947196 (98.94%) | 38 (0.0008%) | 0 (0%) | 0 (0%) | 16105 |
 
 
